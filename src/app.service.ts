@@ -5,9 +5,9 @@ import * as aws from 'aws-sdk';
 @Injectable()
 export class AppService {
 
-  ID = 'AKIAIZDAKOB6TR2JRCZA';
-  SECRET = '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';
-  name = 'fatherfrost-test';
+  ID = '';
+  SECRET = '';
+  name = '';
   location = 'eu-central-1';
 
   s3 = new aws.S3({
