@@ -27,6 +27,7 @@
     "@nestjs/passport": "^7.0.0",
     "@nestjs/platform-express": "^7.0.0",
     "@nestjs/typeorm": "^7.0.0",
+    "async": "^3.2.0",
     "aws-sdk": "^2.658.0",
     "busboy": "^0.3.1",
     "class-transformer": "^0.2.3",
