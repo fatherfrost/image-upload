@@ -1,39 +1,33 @@
 import { Injectable } from '@nestjs/common';
 import * as sharp from 'sharp';
 import * as aws from 'aws-sdk';
-import * as Busboy from "busboy";
 
 @Injectable()
 export class AppService {
   ID = '';
   SECRET = '';
-  BUCKET_NAME = 'images';
   s3 = new aws.S3({
     accessKeyId: this.ID,
     secretAccessKey: this.SECRET
   });
 
-  async upload(request) {
+  async upload(image) {
     const sizes = [300, 1024, 2048];
-    const image = await this.readImage(request);
     console.log(image);
     sizes.forEach(size => {
-      sharp(image).resize({ height: size, width: size}).toFile(size + '.jpg')
-        .then((result) => {
-          console.log('Done');
-          console.log(result);
-          // this.uploadToS3(result, size);
+      sharp(image).resize({ height: size, width: size}).toBuffer()
+        .then(data => {
+          console.log('done');
+          // this.uploadToS3(data, size);
         })
-        .catch((err) => {
-          console.log(err);
-        });
+        .catch(err => { console.log(err.message) });
     })
 
   }
 
   uploadToS3(image, size) {
     const params = {
-      Bucket: 'userId',
+      Bucket: 'photos',
       Key: size + '*' + size + '.jpg',
       Body: image
     };
@@ -46,7 +40,7 @@ export class AppService {
     });
   }
 
-  readImage(req) {
+  /*readImage(req) {
     let image;
     console.log('--------------------');
     return new Promise((resolve, reject) => {
@@ -68,5 +62,5 @@ export class AppService {
       });
       req.pipe(busBoy);
     });
-  }
+  }*/
 }
