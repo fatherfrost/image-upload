@@ -4,63 +4,63 @@ import * as aws from 'aws-sdk';
 
 @Injectable()
 export class AppService {
+
   ID = '';
   SECRET = '';
+  name = 'fatherfrost-test';
+  location = 'eu-central-1';
+
   s3 = new aws.S3({
     accessKeyId: this.ID,
     secretAccessKey: this.SECRET
   });
 
+  bucketParams = {
+    Bucket: this.name,
+    CreateBucketConfiguration: {
+      LocationConstraint: this.location
+    }
+  };
+
   async upload(image) {
-    const sizes = [300, 1024, 2048];
-    console.log(image);
-    sizes.forEach(size => {
-      sharp(image).resize({ height: size, width: size}).toBuffer()
-        .then(data => {
-          console.log('done');
-          // this.uploadToS3(data, size);
-        })
-        .catch(err => { console.log(err.message) });
-    })
-
-  }
-
-  uploadToS3(image, size) {
-    const params = {
-      Bucket: 'photos',
-      Key: size + '*' + size + '.jpg',
-      Body: image
-    };
-    this.s3.upload(params, function(err, data) {
-      if (err) {
+    // create bucket . if already exists and owned by this s3 user - continue, in other cases - throw err
+    try {
+      await this.createBucket();
+    } catch (err) {
+      if (err.code !== 'BucketAlreadyOwnedByYou')
         throw err;
-      }
-      console.log(`File uploaded successfully. ${data.Location}`);
-      return 1;
+    }
+    const sizes = [300, 1024, 2048];
+    return Promise.all(sizes.map(async size => {
+      return new Promise(resolve => {
+        sharp(image).resize({ height: size, width: size})
+          .toBuffer()
+          .then(async data => {
+            const uploadResult = await this.uploadToS3(data, size);
+            resolve(uploadResult);
+          })
+      })
+    })).then(result => {
+      return result;
     });
   }
 
-  /*readImage(req) {
-    let image;
-    console.log('--------------------');
-    return new Promise((resolve, reject) => {
-      const busBoy = Busboy({headers: req.headers});
-      busBoy.on('file', (fieldName, file) => {
-        const stream = [];
-        file.on('data', (data) => {
-          console.log('1111111111111');
-          stream.push(data);
-        });
-        file.on('end', () => {
-          console.log('22222222222');
-          image = Buffer.concat(stream);
-        });
+   async uploadToS3(image, size) {
+      const params = {
+        Bucket: this.bucketParams.Bucket,
+        Key: size + '.jpg',
+        Body: image
+      };
+      this.s3.upload(params).promise().then(result => {
+        console.log(result.Location, ' saved');
       });
-      busBoy.on('finish', function () {
-        console.log('3333333333');
-        resolve(image);
-      });
-      req.pipe(busBoy);
-    });
-  }*/
+      const link = 'https://' + params.Bucket + '.s3.' + this.location + '.amazonaws.com/' + params.Key; // create link to file so
+      return link;                                                                                       // we don't need to wait it saved
+
+  }
+
+  createBucket() {
+    return this.s3.createBucket(this.bucketParams).promise();
+  }
 }
+

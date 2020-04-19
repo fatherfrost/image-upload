@@ -15,10 +15,9 @@ export class AppController {
   @Post('/upload')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('image'))
-  getById(
+  async getById(
     @UploadedFile() image
   ) {
-    console.log(image);
     return this.appService.upload(image.buffer);
   }
 
@@ -27,7 +26,6 @@ export class AppController {
   login(
     @Request() req
   ) {
-    console.log('logged in with ' + req.user.name);
     return this.authService.login(req.user);
   }
 }
