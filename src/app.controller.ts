@@ -13,7 +13,7 @@ export class AppController {
   ) {}
 
   @Post('/upload')
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('image'))
   async getById(
     @UploadedFile() image

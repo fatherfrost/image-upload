@@ -5,8 +5,8 @@ import * as aws from 'aws-sdk';
 @Injectable()
 export class AppService {
 
-  ID = '';
-  SECRET = '';
+  ID = 'AKIAIZDAKOB6TR2JRCZA';
+  SECRET = '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';
   name = 'fatherfrost-test';
   location = 'eu-central-1';
 
@@ -22,7 +22,7 @@ export class AppService {
     }
   };
 
-  async upload(image) {
+ /* async upload(image) {
     // create bucket . if already exists and owned by this s3 user - continue, in other cases - throw err
     try {
       await this.createBucket();
@@ -43,7 +43,26 @@ export class AppService {
     })).then(result => {
       return result;
     });
+  }*/
+
+  async upload(image) {
+    // create bucket . if already exists and owned by this s3 user - continue, in other cases - throw err
+    try {
+      await this.createBucket();
+    } catch (err) {
+      if (err.code !== 'BucketAlreadyOwnedByYou')
+        throw err;
+    }
+    const sizes = [300, 1024, 2048];
+    const promises = sizes.map(size => sharp(image).resize({ height: size, width: size }).toBuffer().then(result => {
+      return this.uploadToS3(result, size);
+    }));
+    // wait until all promises are resolved
+    return  await Promise.all(promises).then(result => {
+      return result.map(item => {return item.Location});
+    });
   }
+
 
    async uploadToS3(image, size) {
       const params = {
@@ -51,13 +70,9 @@ export class AppService {
         Key: size + '.jpg',
         Body: image
       };
-      this.s3.upload(params).promise().then(result => {
-        console.log(result.Location, ' saved');
-      });
-      const link = 'https://' + params.Bucket + '.s3.' + this.location + '.amazonaws.com/' + params.Key; // create link to file so
-      return link;                                                                                       // we don't need to wait it saved
-
-  }
+      return await this.s3.upload(params).promise();
+      // return 'https://' + params.Bucket + '.s3.' + this.location + '.amazonaws.com/' + params.Key;
+    };
 
   createBucket() {
     return this.s3.createBucket(this.bucketParams).promise();
