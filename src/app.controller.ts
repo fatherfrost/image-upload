@@ -21,7 +21,7 @@ export class AppController {
     return this.appService.upload(image.buffer);
   }
 
-  @Get('login')
+  @Post('login')
   @UseGuards(LocalAuthGuard)
   login(
     @Request() req
