@@ -13,9 +13,9 @@ export class AppController {
   ) {}
 
   @Post('/upload')
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('image'))
-  async getById(
+  async upload(
     @UploadedFile() image
   ) {
     return this.appService.upload(image.buffer);
