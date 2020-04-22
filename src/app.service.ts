@@ -7,7 +7,7 @@ export class AppService {
 
   ID = '';
   SECRET = '';
-  name = 'fatherfrost-test';
+  name = '';
   location = 'eu-central-1';
 
   s3 = new aws.S3({
@@ -22,7 +22,7 @@ export class AppService {
     }
   };
 
-  async upload(image) {
+  async upload(image): Promise<string[]> {
     // create bucket . if already exists and owned by this s3 user - continue, in other cases - throw err
     try {
       await this.createBucket();
@@ -31,17 +31,14 @@ export class AppService {
         throw err;
     }
     const sizes = [300, 1024, 2048];
-    return Promise.all(sizes.map(async size => {
-      return new Promise(resolve => {
-        sharp(image).resize({ height: size, width: size})
-          .toBuffer()
-          .then(async data => {
-            const uploadResult = await this.uploadToS3(data, size);
-            resolve(uploadResult);
-          })
-      })
-    })).then(result => {
-      return result;
+    const promises = sizes.map(size => sharp(image).resize({ height: size, width: size }).toBuffer().then(result => {
+      return this.uploadToS3(result, size);
+    }));
+    // wait until all photos are saved and return link for every of them
+    return await Promise.all(promises).then(result => {
+      return result.map(item => {
+        return item.Location;
+      });
     });
   }
 
@@ -51,13 +48,8 @@ export class AppService {
         Key: size + '.jpg',
         Body: image
       };
-      this.s3.upload(params).promise().then(result => {
-        console.log(result.Location, ' saved');
-      });
-      const link = 'https://' + params.Bucket + '.s3.' + this.location + '.amazonaws.com/' + params.Key; // create link to file so
-      return link;                                                                                       // we don't need to wait it saved
-
-  }
+      return await this.s3.upload(params).promise();
+    };
 
   createBucket() {
     return this.s3.createBucket(this.bucketParams).promise();
